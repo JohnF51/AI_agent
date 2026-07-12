@@ -5,7 +5,7 @@ import platform
 from google.antigravity import Agent
 from agent import create_agent_config
 
-# ANSI farby pre terminálové rozhranie
+# ANSI colors for terminal interface
 GREEN = "\033[92m"
 CYAN = "\033[96m"
 YELLOW = "\033[93m"
@@ -21,27 +21,76 @@ def get_git_branch():
     except Exception:
         return "unknown"
 
-async def main():
-    if sys.platform == 'win32':
-        os.system("") # Zapne podporu ANSI farieb vo Windows konzole
-        
-    config = create_agent_config()
+def select_model() -> str:
+    # Clear screen first to present the selection menu cleanly
+    os.system('cls' if os.name == 'nt' else 'clear')
     
     print(f"{CYAN}{BOLD}============================================================{RESET}")
-    print(f"{GREEN}{BOLD}      Antigravity AI Agent - Vylepšené lokálne rozhranie{RESET}")
+    print(f"{GREEN}{BOLD}              Gemini Model Selection Menu{RESET}")
     print(f"{CYAN}============================================================{RESET}")
-    print(f" Napíš {YELLOW}help{RESET} alebo {YELLOW}?{RESET} pre zoznam príkazov a schopností.")
-    print(f" Napíš {RED}exit{RESET} pre ukončenie programu.")
+    print("Choose a Gemini model to run your AI Agent:")
+    print(f"  1) {GREEN}Gemini 3.5 Flash{RESET} (Default)   - Fastest, recommended for most tasks")
+    print(f"  2) {GREEN}Gemini 3.5 Pro{RESET}             - Strongest reasoning and coding ability")
+    print(f"  3) {GREEN}Gemini 2.0 Flash{RESET}           - Experimental speed and vision capabilities")
+    print(f"  4) {GREEN}Gemini 1.5 Pro{RESET}             - Legacy high-capability model")
+    print(f"  5) {GREEN}Gemini 1.5 Flash{RESET}           - Legacy fast, lightweight model")
+    print("  6) Custom model name")
     print(f"{CYAN}============================================================{RESET}")
+    
+    try:
+        choice = input("Enter choice [1-6, default: 1]: ").strip()
+    except (KeyboardInterrupt, EOFError):
+        print(f"\n{YELLOW}Selection interrupted. Using default Gemini 3.5 Flash.{RESET}")
+        return "gemini-3.5-flash"
+        
+    if not choice or choice == "1":
+        return "gemini-3.5-flash"
+    elif choice == "2":
+        return "gemini-3.5-pro"
+    elif choice == "3":
+        return "gemini-2.0-flash"
+    elif choice == "4":
+        return "gemini-1.5-pro"
+    elif choice == "5":
+        return "gemini-1.5-flash"
+    elif choice == "6":
+        try:
+            custom_name = input("Enter custom model name (e.g. gemini-2.5-pro): ").strip()
+            return custom_name if custom_name else "gemini-3.5-flash"
+        except (KeyboardInterrupt, EOFError):
+            return "gemini-3.5-flash"
+    else:
+        print(f"{YELLOW}Invalid choice. Defaulting to Gemini 3.5 Flash.{RESET}")
+        return "gemini-3.5-flash"
+
+async def main():
+    if sys.platform == 'win32':
+        os.system("") # Enable ANSI colors in Windows console
+        
+    selected_model = select_model()
+    config = create_agent_config(model_name=selected_model)
+    
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print(f"{CYAN}{BOLD}============================================================{RESET}")
+    print(f"{GREEN}{BOLD}      Antigravity AI Agent - Enhanced CLI Interface{RESET}")
+    print(f"{CYAN}============================================================{RESET}")
+    print(f" Model selected: {GREEN}{selected_model}{RESET}")
+    print(f" Type {YELLOW}help{RESET} or {YELLOW}?{RESET} for commands and capabilities.")
+    print(f" Type {RED}exit{RESET} to exit the session.")
+    print(f"{CYAN}============================================================{RESET}")
+    
+    # Initialize token counters
+    total_input_tokens = 0
+    total_output_tokens = 0
     
     async with Agent(config) as agent:
         while True:
             try:
-                # Načítanie vstupu
-                sys.stdout.write(f"\n{GREEN}{BOLD}Užívateľ:{RESET} ")
+                # Prompt user input
+                sys.stdout.write(f"\n{GREEN}{BOLD}User:{RESET} ")
                 sys.stdout.flush()
                 
-                # Použijeme executor na neblokujúce načítanie vstupu z konzoly
+                # Use executor to fetch console input asynchronously
                 user_input = await asyncio.get_event_loop().run_in_executor(None, input)
                 user_input_stripped = user_input.strip()
                 
@@ -51,24 +100,24 @@ async def main():
                 cmd = user_input_stripped.lower()
                 
                 if cmd in ("exit", "/exit"):
-                    print(f"{YELLOW}Ukončujem reláciu a zatváram agenta...{RESET}")
+                    print(f"{YELLOW}Exiting the session and closing the agent...{RESET}")
                     break
                     
                 elif cmd in ("help", "?", "/help", "h"):
-                    print(f"\n{CYAN}{BOLD}--- NÁPOVEDA & DOSTUPNÉ MOŽNOSTI ---{RESET}")
-                    print(f"{BOLD}Vstavané príkazy v príkazovom riadku:{RESET}")
-                    print(f"  {YELLOW}help{RESET} / {YELLOW}?{RESET}      - Zobrazí túto nápovedu.")
-                    print(f"  {YELLOW}clear{RESET} / {YELLOW}cls{RESET}   - Vyčistí obrazovku terminálu.")
-                    print(f"  {YELLOW}status{RESET}        - Vypíše informácie o konfigurácii a prostredí.")
-                    print(f"  {YELLOW}exit{RESET}          - Bezpečne ukončí program.")
-                    print(f"\n{BOLD}Čo všetko dokáže tento AI Agent (schopnosti):{RESET}")
-                    print("  - Zistiť systémové informácie o tvojom PC (OS, disky).")
-                    print("  - Prehliadať priečinky projektu a hľadať v nich súbory.")
-                    print("  - Vyhľadávať konkrétne kódové fragmenty (grep) v súboroch.")
-                    print("  - Čítať a analyzovať obsahy súborov projektu.")
-                    print("  - Prehľadávať internet a čítať dokumentácie na webových stránkach.")
-                    print(f"  - Spúšťať shell príkazy ({RED}bezpečnostná poistka{RESET}: pred spustením si vyžiada schválenie).")
-                    print(f"{CYAN}------------------------------------{RESET}")
+                    print(f"\n{CYAN}{BOLD}--- HELP & AVAILABLE COMMANDS ---{RESET}")
+                    print(f"{BOLD}Local Console Commands:{RESET}")
+                    print(f"  {YELLOW}help{RESET} / {YELLOW}?{RESET}      - Show this help menu.")
+                    print(f"  {YELLOW}clear{RESET} / {YELLOW}cls{RESET}   - Clear the console screen.")
+                    print(f"  {YELLOW}status{RESET}        - Display system, environment and API config.")
+                    print(f"  {YELLOW}exit{RESET}          - Terminate the program session.")
+                    print(f"\n{BOLD}AI Agent Capabilities:{RESET}")
+                    print("  - Retrieve system metrics and hardware info (OS, disk space).")
+                    print("  - Browse workspace folders and find files by name.")
+                    print("  - Perform grep text search across codebase files.")
+                    print("  - Read and analyze file contents of the project.")
+                    print("  - Query the web and read documentation from URLs.")
+                    print(f"  - Execute shell commands ({RED}requires user approval confirmation{RESET}).")
+                    print(f"{CYAN}---------------------------------{RESET}")
                     continue
                     
                 elif cmd in ("clear", "cls", "/clear"):
@@ -76,27 +125,46 @@ async def main():
                     continue
                     
                 elif cmd in ("status", "/status"):
-                    print(f"\n{CYAN}{BOLD}--- STAV SYSTÉMU & AGENTA ---{RESET}")
-                    print(f"  Platforma:      {platform.system()} {platform.release()} ({platform.machine()})")
-                    print(f"  Adresár:        {os.getcwd()}")
-                    api_key_status = f"{GREEN}Nájdený a aktívny{RESET}" if os.environ.get("GEMINI_API_KEY") else f"{RED}Chýba / Vyžiadaný{RESET}"
-                    print(f"  Gemini API kľúč: {api_key_status}")
-                    print(f"  Aktuálna vetva: {CYAN}{get_git_branch()}{RESET}")
-                    print(f"{CYAN}-----------------------------{RESET}")
+                    print(f"\n{CYAN}{BOLD}--- ENVIRONMENT & AGENT STATUS ---{RESET}")
+                    print(f"  Platform:        {platform.system()} {platform.release()} ({platform.machine()})")
+                    print(f"  CWD:             {os.getcwd()}")
+                    print(f"  Active Model:    {GREEN}{selected_model}{RESET}")
+                    api_key_status = f"{GREEN}Loaded & Active{RESET}" if os.environ.get("GEMINI_API_KEY") else f"{RED}Missing / Prompted{RESET}"
+                    print(f"  Gemini API Key:  {api_key_status}")
+                    print(f"  Current Branch:  {CYAN}{get_git_branch()}{RESET}")
+                    print(f"  Session Tokens:  Input: {total_input_tokens} | Output: {total_output_tokens} | Total: {total_input_tokens + total_output_tokens}")
+                    print(f"{CYAN}----------------------------------{RESET}")
                     continue
                 
-                print(f"{YELLOW}Agent premýšľa...{RESET}")
+                print(f"{YELLOW}Agent thinking...{RESET}")
                 response = await agent.chat(user_input_stripped)
                 print(f"\n{CYAN}{BOLD}Agent:{RESET} {await response.text()}")
                 
+                # Update and print token usage
+                usage = response.usage_metadata
+                if usage:
+                    in_t = usage.prompt_token_count or 0
+                    out_t = usage.candidates_token_count or 0
+                    th_t = usage.thoughts_token_count or 0
+                    tot_t = usage.total_token_count or 0
+                    
+                    total_input_tokens += in_t
+                    total_output_tokens += out_t
+                    
+                    print(f"\n{YELLOW}[Tokens - Turn: In: {in_t} | Out: {out_t}", end="")
+                    if th_t > 0:
+                        print(f" (Thinking: {th_t})", end="")
+                    print(f" | Total: {tot_t}]")
+                    print(f"[Tokens - Session: In: {total_input_tokens} | Out: {total_output_tokens} | Total: {total_input_tokens + total_output_tokens}]{RESET}")
+                
             except KeyboardInterrupt:
-                print(f"\n{YELLOW}Ukončujem reláciu...{RESET}")
+                print(f"\n{YELLOW}Session interrupted by user. Exiting...{RESET}")
                 break
             except Exception as e:
-                print(f"\n{RED}Nastala chyba: {e}{RESET}")
+                print(f"\n{RED}Error occurred: {e}{RESET}")
 
 if __name__ == "__main__":
-    # Nastavenie podpory pre Windows Event Loop
+    # Configure Windows Event Loop Policy
     if sys.platform == 'win32':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
         
