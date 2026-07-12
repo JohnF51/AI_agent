@@ -2,71 +2,71 @@
 setlocal enabledelayedexpansion
 
 echo ==========================================
-echo Nastavenie projektu s uv (Google Antigravity)
+echo Project Setup with uv (Google Antigravity)
 echo ==========================================
 
-:: 1. Kontrola, ci je uv uz nainstalovane
+:: 1. Check if uv is installed
 where uv >nul 2>nul
 if %errorlevel% equ 0 (
     set "UV_CMD=uv"
-    echo [OK] Nastroj uv bol najdeny v PATH.
+    echo [OK] uv tool found in PATH.
 ) else (
     if exist "%USERPROFILE%\.local\bin\uv.exe" (
         set "UV_CMD=%USERPROFILE%\.local\bin\uv.exe"
-        echo [OK] Nastroj uv bol najdeny v %USERPROFILE%\.local\bin\
+        echo [OK] uv tool found in %USERPROFILE%\.local\bin\
     ) else (
-        echo [INFO] Nastroj uv nebol najdeny. Instalujem ho cez PowerShell...
+        echo [INFO] uv tool not found. Installing via PowerShell...
         powershell -ExecutionPolicy ByPass -Command "irm https://astral.sh/uv/install.ps1 | iex"
         
         if exist "%USERPROFILE%\.local\bin\uv.exe" (
             set "UV_CMD=%USERPROFILE%\.local\bin\uv.exe"
-            echo [OK] Nastroj uv bol uspesne nainstalovany.
+            echo [OK] uv tool installed successfully.
         ) else (
-            echo [CHYBA] Instalacia uv zlyhala. Prosim nainstalujte uv manualne: pip install uv
+            echo [ERROR] Installation of uv failed. Please install uv manually: pip install uv
             pause
             exit /b 1
         )
     )
 )
 
-:: 2. Instalacia Pythonu 3.12
+:: 2. Install Python 3.12
 echo.
-echo [INFO] Instalujem Python 3.12 cez uv...
+echo [INFO] Installing Python 3.12 via uv...
 "%UV_CMD%" python install 3.12
 if %errorlevel% neq 0 (
-    echo [CHYBA] Instalacia Pythonu zlyhala.
+    echo [ERROR] Python installation failed.
     pause
     exit /b 1
 )
 
-:: 3. Vytvorenie virtualneho prostredia
+:: 3. Create virtual environment
 echo.
-echo [INFO] Vytvaram virtualne prostredie (.venv)...
+echo [INFO] Creating virtual environment (.venv)...
 if exist .venv (
-    echo [INFO] Virtualne prostredie uz existuje.
+    echo [INFO] Virtual environment already exists.
 ) else (
     "%UV_CMD%" venv --python 3.12
     if %errorlevel% neq 0 (
-        echo [CHYBA] Vytvorenie venv zlyhalo.
+        echo [ERROR] Creating venv failed.
         pause
         exit /b 1
     )
 )
 
-:: 4. Instalacia dependencii
+:: 4. Install dependencies
 echo.
-echo [INFO] Instalujem kniznicu google-antigravity z requirements.txt...
+echo [INFO] Installing google-antigravity from requirements.txt...
 "%UV_CMD%" pip install -r requirements.txt
 if %errorlevel% neq 0 (
-    echo [CHYBA] Instalacia balikov zlyhala.
+    echo [ERROR] Package installation failed.
     pause
     exit /b 1
 )
 
 echo.
 echo ==========================================
-echo Nastavenie prebehlo USPESNE!
-echo Teraz mozes spustit agenta prikazom:
+echo Setup completed SUCCESSFULLY!
+echo You can now start the agent using:
 echo uv run main.py
 echo ==========================================
 pause

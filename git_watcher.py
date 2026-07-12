@@ -61,7 +61,7 @@ def run_git_sync():
         return
 
     # 2. Vytvorenie commitu
-    commit_msg = f"Code update by admin ({time.strftime('%Y-%m-%d %H:%M:%S')})"
+    commit_msg = "Code update by admin"
     try:
         subprocess.check_call(["git", "commit", "-m", commit_msg])
         print(f"{GREEN}[WATCHER] git commit (úspešné: '{commit_msg}'){RESET}")
