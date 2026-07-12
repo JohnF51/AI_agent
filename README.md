@@ -1,66 +1,79 @@
-# Lokálny AI Agent s Google Antigravity SDK a 'uv'
+# Local AI Agent with Google Antigravity SDK and 'uv'
 
-Tento projekt demonštruje vytvorenie a spustenie vlastného autonómneho AI agenta pomocou knižnice `google-antigravity` a správcu balíkov `uv`.
+This project demonstrates how to build and run your own autonomous AI agent using the `google-antigravity` library and the `uv` package manager.
 
-## Rýchly štart (Automatická inštalácia)
+## Quick Start (Automatic Installation)
 
-Pre automatickú inštaláciu `uv`, Pythonu a všetkých závislostí stačí spustiť skript **`setup.bat`** (napr. dvojklikom alebo spustením v termináli):
+To automatically install `uv`, Python, and all required dependencies, simply run the **`setup.bat`** script (e.g., by double-clicking it or running it in your terminal):
 
 ```cmd
 setup.bat
 ```
 
-Skript automaticky:
-1. Skontroluje / nainštaluje správcu balíkov `uv`.
-2. Nainštaluje Python verzie 3.12.
-3. Vytvorí lokálne virtuálne prostredie `.venv`.
-4. Nainštaluje `google-antigravity` z `requirements.txt`.
+The script will automatically:
+1. Check for/install the `uv` package manager.
+2. Install Python version 3.12.
+3. Create a local virtual environment `.venv`.
+4. Install `google-antigravity` and other requirements from `requirements.txt`.
 
-Po dokončení inštalácie spustíte agenta príkazom:
+After installation is complete, run the agent using:
 ```bash
 uv run main.py
 ```
 
 ---
 
-## Manuálny postup
+## Manual Installation
 
-Ak preferujete manuálnu inštaláciu krok po kroku, postupujte takto:
+If you prefer a manual, step-by-step installation, follow these instructions:
 
-### 1. Inštalácia `uv`
+### 1. Install `uv`
 - **Windows (PowerShell):**
   ```powershell
   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
   ```
-- Alebo cez **pip**:
+- Or via **pip**:
   ```bash
   pip install uv
   ```
 
-### 2. Inštalácia Pythonu
+### 2. Install Python
 ```bash
 uv python install 3.12
 ```
 
-### 3. Vytvorenie a aktivácia virtuálneho prostredia
+### 3. Create and Activate the Virtual Environment
 ```bash
 uv venv --python 3.12
 ```
 
-Aktivácia:
+Activation:
 - **PowerShell:** `.venv\Scripts\Activate.ps1`
 - **CMD:** `.venv\Scripts\activate.bat`
 
-### 4. Inštalácia závislostí
+### 4. Install Dependencies
 ```bash
 uv pip install -r requirements.txt
 ```
 
-### 5. Spustenie agenta
+### 5. Run the Agent
 ```bash
 uv run main.py
 ```
 
-## Príklady na vyskúšanie v chate
-1. **Zistenie informácií o systéme:** Opýtajte sa agenta: *"Aké sú systémové informácie?"* alebo *"Zisti voľné miesto na disku C"*.
-2. **Bezpečnostný test (Human-in-the-loop):** Prikážte agentovi: *"Spusti príkaz whoami"* alebo *"Zobraz súbory v priečinku"*. Agent si pred spustením shell príkazu vyžiada vaše povolenie.
+---
+
+## Git Auto-Watcher (Auto-Commit & Auto-Push)
+
+If you are working with an AI assistant in this repository, you can enable automatic tracking of code changes. The assistant will write files locally, and the watcher will automatically commit and push them to your Git repository in real-time.
+
+To start the watcher, run:
+```bash
+python git_watcher.py
+```
+
+---
+
+## Try These Prompts in Chat
+1. **Get System Information:** Ask the agent: *"What is the system information?"* or *"Check free disk space on C:"*.
+2. **Security Test (Human-in-the-Loop):** Order the agent: *"Run whoami command"* or *"Show files in folder"*. The agent will request your explicit approval before executing any shell command.
