@@ -30,15 +30,16 @@ def select_model() -> str:
     print(f"{CYAN}============================================================{RESET}")
     print("Choose a Gemini model to run your AI Agent:")
     print(f"  1) {GREEN}Gemini 3.5 Flash{RESET} (Default)   - Fastest, optimized for speed and agents")
-    print(f"  2) {GREEN}Gemini 3.1 Pro{RESET}             - High-capability, advanced reasoning & coding")
-    print(f"  3) {GREEN}Gemini 3.1 Flash Lite{RESET}      - Efficient, cost-effective, high-volume tasks")
-    print(f"  4) {GREEN}Gemini 3.0 Pro{RESET}             - Balanced reasoning and performance")
-    print(f"  5) {GREEN}Gemini 3.0 Flash{RESET}           - Standard lightweight speed model")
-    print("  6) Custom model name")
+    print(f"  2) {GREEN}Gemini 3.5 Pro{RESET}             - Ultimate reasoning, coding and agent performance")
+    print(f"  3) {GREEN}Gemini 3.1 Pro{RESET}             - Stable reasoning and coding flagship")
+    print(f"  4) {GREEN}Gemini 3.1 Flash Lite{RESET}      - Efficient, cost-effective, high-volume tasks")
+    print(f"  5) {GREEN}Gemini 3.0 Pro{RESET}             - Legacy reasoning model")
+    print(f"  6) {GREEN}Gemini 3.0 Flash{RESET}           - Legacy lightweight speed model")
+    print("  7) Custom model name")
     print(f"{CYAN}============================================================{RESET}")
     
     try:
-        choice = input("Enter choice [1-6, default: 1]: ").strip()
+        choice = input("Enter choice [1-7, default: 1]: ").strip()
     except (KeyboardInterrupt, EOFError):
         print(f"\n{YELLOW}Selection interrupted. Using default Gemini 3.5 Flash.{RESET}")
         return "gemini-3.5-flash"
@@ -46,14 +47,16 @@ def select_model() -> str:
     if not choice or choice == "1":
         return "gemini-3.5-flash"
     elif choice == "2":
-        return "gemini-3.1-pro"
+        return "gemini-3.5-pro"
     elif choice == "3":
-        return "gemini-3.1-flash-lite"
+        return "gemini-3.1-pro"
     elif choice == "4":
-        return "gemini-3.0-pro"
+        return "gemini-3.1-flash-lite"
     elif choice == "5":
-        return "gemini-3.0-flash"
+        return "gemini-3.0-pro"
     elif choice == "6":
+        return "gemini-3.0-flash"
+    elif choice == "7":
         try:
             custom_name = input("Enter custom model name (e.g. gemini-3.5-flash-latest): ").strip()
             return custom_name if custom_name else "gemini-3.5-flash"
