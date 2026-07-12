@@ -3,14 +3,14 @@ import sys
 import time
 import subprocess
 
-# Farby pre terminálový výstup
+# Colors for terminal output
 GREEN = "\033[92m"
 CYAN = "\033[96m"
 YELLOW = "\033[93m"
 RED = "\033[91m"
 RESET = "\033[0m"
 
-# Ignorované priečinky a súbory
+# Ignored directories and files
 IGNORE_DIRS = {".git", ".venv", "__pycache__", ".idea", ".vscode"}
 IGNORE_FILES = {"git_watcher.py", ".api_key.enc", ".gitignore"}
 
@@ -22,10 +22,10 @@ def get_git_branch():
         return "unknown"
 
 def scan_files(root_dir):
-    """Naskenuje všetky sledované súbory a vráti ich cesty a čas poslednej úpravy."""
+    """Scans all tracked files and returns their paths and modification times."""
     files_state = {}
     for dirpath, dirnames, filenames in os.walk(root_dir):
-        # Odstránime ignorované priečinky z dirnames na mieste, aby os.walk do nich nevstupoval
+        # Remove ignored directories in place so os.walk doesn't enter them
         dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS]
         
         for filename in filenames:
@@ -36,12 +36,12 @@ def scan_files(root_dir):
                 mtime = os.path.getmtime(full_path)
                 files_state[full_path] = mtime
             except OSError:
-                # Súbor mohol byť vymazaný počas skenovania
+                # File might have been deleted during scanning
                 pass
     return files_state
 
 def has_git_changes():
-    """Skontroluje, či sú v repozitári nejaké zmeny pripravené na commit."""
+    """Checks if there are any changes in the repository ready to commit."""
     try:
         output = subprocess.check_output(["git", "status", "--porcelain"], stderr=subprocess.DEVNULL)
         return len(output.strip()) > 0
@@ -49,68 +49,68 @@ def has_git_changes():
         return False
 
 def run_git_sync():
-    """Spustí git add, commit a push."""
-    print(f"\n{CYAN}[WATCHER] Zmeny detegované. Spúšťam synchronizáciu...{RESET}")
+    """Runs git add, commit, and push."""
+    print(f"\n{CYAN}[WATCHER] Changes detected. Starting sync...{RESET}")
     
-    # 1. Pridanie zmien
+    # 1. Stage changes
     try:
         subprocess.check_call(["git", "add", "-A"])
-        print(f"{GREEN}[WATCHER] git add -A (úspešné){RESET}")
+        print(f"{GREEN}[WATCHER] git add -A (successful){RESET}")
     except subprocess.CalledProcessError as e:
-        print(f"{RED}[WATCHER] Chyba pri git add: {e}{RESET}")
+        print(f"{RED}[WATCHER] Error in git add: {e}{RESET}")
         return
 
-    # 2. Vytvorenie commitu
+    # 2. Create commit
     commit_msg = "Code update by admin"
     try:
         subprocess.check_call(["git", "commit", "-m", commit_msg])
-        print(f"{GREEN}[WATCHER] git commit (úspešné: '{commit_msg}'){RESET}")
+        print(f"{GREEN}[WATCHER] git commit (successful: '{commit_msg}'){RESET}")
     except subprocess.CalledProcessError as e:
-        # Commit môže zlyhať napr. ak nie sú žiadne zmeny (čo by malo byť ošetrené, ale pre istotu)
-        print(f"{YELLOW}[WATCHER] git commit info/upozornenie: {e}{RESET}")
+        # Commit might fail if there are no changes (handled, but just in case)
+        print(f"{YELLOW}[WATCHER] git commit info/warning: {e}{RESET}")
         return
 
-    # 3. Odoslanie do remote
+    # 3. Push to remote
     try:
         branch = get_git_branch()
-        print(f"{CYAN}[WATCHER] Odosielam zmeny do vetvy '{branch}'...{RESET}")
-        # Nastavíme timeout 30 sekúnd na push, aby to nezamrzlo navždy
+        print(f"{CYAN}[WATCHER] Pushing changes to branch '{branch}'...{RESET}")
+        # Set a 30-second timeout on push to avoid freezing indefinitely
         subprocess.check_call(["git", "push", "origin", branch], timeout=30)
-        print(f"{GREEN}[WATCHER] git push úspešne dokončený!{RESET}")
+        print(f"{GREEN}[WATCHER] git push completed successfully!{RESET}")
     except subprocess.TimeoutExpired:
-        print(f"{RED}[WATCHER] Chyba: git push vypršal časový limit (timeout).{RESET}")
+        print(f"{RED}[WATCHER] Error: git push timed out.{RESET}")
     except subprocess.CalledProcessError as e:
-        print(f"{RED}[WATCHER] Chyba pri git push: {e}{RESET}")
-        print(f"{YELLOW}[TIP] Uisti sa, že máš správne nastavené oprávnenia a 'git push' funguje manuálne.{RESET}")
+        print(f"{RED}[WATCHER] Error in git push: {e}{RESET}")
+        print(f"{YELLOW}[TIP] Make sure your permissions are set up correctly and 'git push' works manually.{RESET}")
 
 def main():
     root_dir = os.path.dirname(os.path.abspath(__file__))
     print("=" * 60)
-    print(f"{GREEN}Spúšťam Git Auto-Watcher pre priečinok:{RESET}")
+    print(f"{GREEN}Starting Git Auto-Watcher for folder:{RESET}")
     print(f"  {root_dir}")
-    print(f"Aktuálna vetva: {CYAN}{get_git_branch()}{RESET}")
-    print("Pre ukončenie stlač Ctrl+C.")
+    print(f"Current branch: {CYAN}{get_git_branch()}{RESET}")
+    print("Press Ctrl+C to exit.")
     print("=" * 60)
 
-    # Inicializačný stav
+    # Initial state
     last_state = scan_files(root_dir)
-    print(f"[WATCHER] Sledujem {len(last_state)} súborov. Čakám na zmeny...")
+    print(f"[WATCHER] Watching {len(last_state)} files. Waiting for changes...")
 
     while True:
         try:
             time.sleep(1.5)
             current_state = scan_files(root_dir)
             
-            # Porovnanie stavov súborov
+            # Compare file states
             changed = False
             
-            # Skontrolujeme zmenené alebo pridané súbory
+            # Check for modified or added files
             for path, mtime in current_state.items():
                 if path not in last_state or last_state[path] != mtime:
                     changed = True
                     break
             
-            # Skontrolujeme vymazané súbory
+            # Check for deleted files
             if not changed:
                 for path in last_state:
                     if path not in current_state:
@@ -118,26 +118,26 @@ def main():
                         break
             
             if changed:
-                # Settle time (počkať chvíľu, kým sa dokončia zápisy všetkých súborov)
+                # Settle time (wait a bit to let file writes finish)
                 time.sleep(1.0)
-                # Aktualizujeme stav
+                # Update state
                 last_state = scan_files(root_dir)
                 
-                # Ak git skutočne eviduje zmeny, synchronizujeme
+                # If git actually registers changes, sync them
                 if has_git_changes():
                     run_git_sync()
                 else:
-                    print(f"{YELLOW}[WATCHER] Detegované zmeny mimo sledovania Gitu (alebo ignorované súbory).{RESET}")
+                    print(f"{YELLOW}[WATCHER] Changes detected outside Git tracking (or ignored files).{RESET}")
             
         except KeyboardInterrupt:
-            print(f"\n{YELLOW}[WATCHER] Sledovanie ukončené užívateľom.{RESET}")
+            print(f"\n{YELLOW}[WATCHER] Watching terminated by user.{RESET}")
             sys.exit(0)
         except Exception as e:
-            print(f"{RED}[WATCHER] Neočakávaná chyba v hlavnej slučke: {e}{RESET}")
-            time.sleep(5) # Krátka pauza pred reštartom slučky
+            print(f"{RED}[WATCHER] Unexpected error in main loop: {e}{RESET}")
+            time.sleep(5)  # Short pause before restarting the loop
 
 if __name__ == "__main__":
-    # Zapnutie ANSI farieb vo Windows Command Prompt (ak je potrebné)
+    # Enable ANSI colors in Windows Command Prompt (if needed)
     if sys.platform == "win32":
         os.system("")
     main()
