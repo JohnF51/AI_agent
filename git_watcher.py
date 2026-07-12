@@ -61,7 +61,7 @@ def run_git_sync():
         return
 
     # 2. Vytvorenie commitu
-    commit_msg = f"Automatická aktualizácia kódu od AI ({time.strftime('%Y-%m-%d %H:%M:%S')})"
+    commit_msg = f"Code update by admin ({time.strftime('%Y-%m-%d %H:%M:%S')})"
     try:
         subprocess.check_call(["git", "commit", "-m", commit_msg])
         print(f"{GREEN}[WATCHER] git commit (úspešné: '{commit_msg}'){RESET}")

@@ -118,15 +118,29 @@ def create_agent_config() -> LocalAgentConfig:
     # Definujeme zoznam pravidiel
     policies = [
         policy.allow("view_file"),                                  # Povoliť bezpečné čítanie súborov
+        policy.allow("list_directory"),                            # Povoliť zobrazenie zoznamu súborov
+        policy.allow("find_file"),                                 # Povoliť vyhľadávanie súborov podľa názvu
+        policy.allow("search_directory"),                          # Povoliť vyhľadávanie textu v súboroch (grep)
+        policy.allow("search_web"),                                # Povoliť vyhľadávanie na webe
+        policy.allow("read_url_content"),                          # Povoliť načítanie obsahu z webu
         policy.ask_user("run_command", handler=confirm_with_user),  # Vyžiadať si súhlas užívateľa pre shell príkazy
         policy.deny("*")                                            # Zvyšok zakázať (deny by default)
     ]
     
     config = LocalAgentConfig(
         system_instructions=(
-            "Si špecializovaný asistent pre správu lokálneho prostredia. "
-            "Máš prístup k nástroju na zisťovanie systémových informácií (get_system_info). "
-            "Komunikuj vždy jasne, vecne a po slovensky."
+            "Si špecializovaný a inteligentný asistent pre správu lokálneho vývojového prostredia.\n"
+            "Máš prístup k nasledujúcim nástrojom pre plnenie úloh:\n"
+            "- `get_system_info`: Zistenie detailov o OS a voľnom mieste na disku.\n"
+            "- `list_directory`: Zobrazenie zoznamu súborov v projekte.\n"
+            "- `find_file`: Vyhľadávanie súborov podľa názvu.\n"
+            "- `search_directory`: Vyhľadávanie konkrétneho textu/kódu v súboroch (grep).\n"
+            "- `view_file`: Čítanie obsahu súborov.\n"
+            "- `search_web`: Vyhľadávanie informácií a programátorskej dokumentácie na webe.\n"
+            "- `read_url_content`: Načítanie celého textu/dokumentácie zo špecifických URL adries.\n"
+            "- `run_command`: Spúšťanie systémových príkazov (vždy vyžaduje potvrdenie užívateľom).\n\n"
+            "Komunikuj vždy jasne, vecne, konštruktívne a výhradne po slovensky. "
+            "Pred spustením príkazov cez run_command sa uisti, že sú bezpečné a vysvetli užívateľovi ich účel."
         ),
         tools=[get_system_info],
         policies=policies
