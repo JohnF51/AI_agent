@@ -53,94 +53,95 @@ def load_or_prompt_api_key() -> str:
                 os.environ["GEMINI_API_KEY"] = decrypted
                 return decrypted
         except Exception as e:
-            print(f"[VAROVANIE] Nepodarilo sa dešifrovať API kľúč zo súboru: {e}")
+            print(f"[WARNING] Failed to decrypt API key from file: {e}")
             
     # 3. If not found, prompt the user
-    print("\n--- Nastavenie Gemini API kľúča ---")
-    print("API kľúč nebol nájdený v premenných prostredia ani v šifrovanom súbore.")
+    print("\n--- Gemini API Key Setup ---")
+    print("API key was not found in environment variables or the encrypted file.")
     try:
-        api_key = input("Zadaj svoj Gemini API kľúč (vstup bude zašifrovaný a uložený): ").strip()
+        api_key = input("Enter your Gemini API key (input will be encrypted and saved): ").strip()
     except (EOFError, KeyboardInterrupt):
-        raise SystemExit("\n[CHYBA] Zadávanie API kľúča bolo prerušené.")
+        raise SystemExit("\n[ERROR] API key input was interrupted.")
     
     if not api_key:
-        raise ValueError("API kľúč nemôže byť prázdny.")
+        raise ValueError("API key cannot be empty.")
         
     # Encrypt and save
     try:
         encrypted = encrypt_key(api_key)
         with open(KEY_FILE, "w", encoding="utf-8") as f:
             f.write(encrypted)
-        print(f"[OK] API kľúč bol úspešne zašifrovaný a uložený do súboru '{KEY_FILE}'.")
+        print(f"[OK] API key was successfully encrypted and saved to file '{KEY_FILE}'.")
     except Exception as e:
-        print(f"[VAROVANIE] Nepodarilo sa uložiť zašifrovaný kľúč: {e}")
+        print(f"[WARNING] Failed to save encrypted key: {e}")
         
     os.environ["GEMINI_API_KEY"] = api_key
     return api_key
 
 
-# 1. Definícia vlastného nástroja (Tool)
+# 1. Definition of custom tool
 def get_system_info() -> str:
     """
-    Získa základné informácie o operačnom systéme a voľnom mieste na disku.
-    Tento nástroj neprijíma žiadne parametre.
+    Get basic information about the operating system and free disk space.
+    This tool does not accept any parameters.
     """
     system = platform.system()
     release = platform.release()
     try:
         total, used, free = shutil.disk_usage("/")
         free_gb = free / (2**30)
-        disk_info = f"Voľné miesto na disku C: {free_gb:.2f} GB"
+        disk_info = f"Free disk space on C: {free_gb:.2f} GB"
     except Exception:
-        disk_info = "Informácie o disku nie sú k dispozícii."
+        disk_info = "Disk information is not available."
         
-    return f"Operačný systém: {system} {release}\n{disk_info}"
+    return f"Operating System: {system} {release}\n{disk_info}"
 
-# 2. Definovanie asynchrónneho handlera pre overovanie akcií (ask_user)
+# 2. Definition of asynchronous handler for verifying actions (ask_user)
 async def confirm_with_user(tool_call) -> bool:
-    print(f"\n--- [BEZPEČNOSŤ] Požiadavka na spustenie nástroja '{tool_call.name}' ---")
+    print(f"\n--- [SECURITY] Request to execute tool '{tool_call.name}' ---")
     if hasattr(tool_call, "arguments") and tool_call.arguments:
-        print(f"Argumenty: {tool_call.arguments}")
+        print(f"Arguments: {tool_call.arguments}")
     
-    # Použitie executor-a, aby sme nezablokovali event loop počas čakania na vstup
+    # Use executor to avoid blocking the event loop while waiting for input
     loop = asyncio.get_event_loop()
     user_response = await loop.run_in_executor(
         None, 
-        lambda: input("Povoliť vykonanie tohto príkazu? (y/n): ")
+        lambda: input("Allow execution of this command? (y/n): ")
     )
     return user_response.strip().lower() == "y"
 
-# 3. Nastavenie konfigurácie agenta s bezpečnostnými pravidlami
-def create_agent_config() -> LocalAgentConfig:
-    # Načítanie alebo vyžiadanie API kľúča
+# 3. Setting up agent configuration with safety policies
+def create_agent_config(model_name: str = "gemini-3.5-flash") -> LocalAgentConfig:
+    # Load or request API key
     load_or_prompt_api_key()
     
-    # Definujeme zoznam pravidiel
+    # Define rule list
     policies = [
-        policy.allow("view_file"),                                  # Povoliť bezpečné čítanie súborov
-        policy.allow("list_directory"),                            # Povoliť zobrazenie zoznamu súborov
-        policy.allow("find_file"),                                 # Povoliť vyhľadávanie súborov podľa názvu
-        policy.allow("search_directory"),                          # Povoliť vyhľadávanie textu v súboroch (grep)
-        policy.allow("search_web"),                                # Povoliť vyhľadávanie na webe
-        policy.allow("read_url_content"),                          # Povoliť načítanie obsahu z webu
-        policy.ask_user("run_command", handler=confirm_with_user),  # Vyžiadať si súhlas užívateľa pre shell príkazy
-        policy.deny("*")                                            # Zvyšok zakázať (deny by default)
+        policy.allow("view_file"),                                  # Allow safe file reading
+        policy.allow("list_directory"),                            # Allow listing directory contents
+        policy.allow("find_file"),                                 # Allow finding files by name
+        policy.allow("search_directory"),                          # Allow grep search within files
+        policy.allow("search_web"),                                # Allow searching the web
+        policy.allow("read_url_content"),                          # Allow reading web content
+        policy.ask_user("run_command", handler=confirm_with_user),  # Ask for user consent for shell commands
+        policy.deny("*")                                            # Deny everything else by default
     ]
     
     config = LocalAgentConfig(
+        model=model_name,
         system_instructions=(
-            "Si špecializovaný a inteligentný asistent pre správu lokálneho vývojového prostredia.\n"
-            "Máš prístup k nasledujúcim nástrojom pre plnenie úloh:\n"
-            "- `get_system_info`: Zistenie detailov o OS a voľnom mieste na disku.\n"
-            "- `list_directory`: Zobrazenie zoznamu súborov v projekte.\n"
-            "- `find_file`: Vyhľadávanie súborov podľa názvu.\n"
-            "- `search_directory`: Vyhľadávanie konkrétneho textu/kódu v súboroch (grep).\n"
-            "- `view_file`: Čítanie obsahu súborov.\n"
-            "- `search_web`: Vyhľadávanie informácií a programátorskej dokumentácie na webe.\n"
-            "- `read_url_content`: Načítanie celého textu/dokumentácie zo špecifických URL adries.\n"
-            "- `run_command`: Spúšťanie systémových príkazov (vždy vyžaduje potvrdenie užívateľom).\n\n"
-            "Komunikuj vždy jasne, vecne, konštruktívne a výhradne po slovensky. "
-            "Pred spustením príkazov cez run_command sa uisti, že sú bezpečné a vysvetli užívateľovi ich účel."
+            "You are a specialized and intelligent assistant for managing the local development environment.\n"
+            "You have access to the following tools to fulfill user requests:\n"
+            "- `get_system_info`: Get OS details and free disk space.\n"
+            "- `list_directory`: View list of files in the project.\n"
+            "- `find_file`: Search for files by name.\n"
+            "- `search_directory`: Find specific text/code fragments inside files (grep).\n"
+            "- `view_file`: Read the content of files.\n"
+            "- `search_web`: Search for information and programming documentation on the web.\n"
+            "- `read_url_content`: Fetch text/documentation from specific URL addresses.\n"
+            "- `run_command`: Run system terminal commands (always requires user approval).\n\n"
+            "Always communicate clearly, concisely, constructively, and exclusively in English. "
+            "Before executing commands via run_command, verify that they are safe and explain their purpose to the user."
         ),
         tools=[get_system_info],
         policies=policies
